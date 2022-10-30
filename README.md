@@ -1,0 +1,1 @@
+# pretix-plugin-attendance-certificate

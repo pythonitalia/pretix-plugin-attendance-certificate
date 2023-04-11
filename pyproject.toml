@@ -1,0 +1,32 @@
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "pretix==4.18.0",
+    "pytest<8.0.0,>=7.3.0",
+    "pytest-django<5.0.0,>=4.5.2",
+    "pycryptodome>=3.17",
+]
+
+[tool.pdm.build]
+includes = ["pretix_attendance_certificate"]
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[project]
+name = "pretix-plugin-attendance-certificate"
+version = "0.1.0"
+description = "Create attendance certificates"
+authors = [
+    {name = "Python Italia"},
+]
+dependencies = []
+requires-python = ">=3.9,<4.0"
+readme = "README.rst"
+license = {text = "MIT"}
+
+[project.urls]
+
+[project.entry-points."pretix.plugin"]
+pretix_attendance_certificate = "pretix_attendance_certificate:PretixPluginMeta"

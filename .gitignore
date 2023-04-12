@@ -63,3 +63,7 @@ target/
 .ipynb_checkpoints
 
 .pdm-python
+
+.ruff_cache
+.venv
+build

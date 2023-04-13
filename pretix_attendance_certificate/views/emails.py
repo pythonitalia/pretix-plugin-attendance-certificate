@@ -1,4 +1,5 @@
 from django.urls import reverse
+from django.template.loader import get_template
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.utils.translation import gettext_lazy as _, ngettext
 
@@ -57,3 +58,14 @@ class SendCertificateEmailView(BaseSenderView):
     def get_task_kwargs(self, form, objects):
         kwargs = super().get_task_kwargs(form, objects)
         return kwargs
+
+    @classmethod
+    def show_history_meta_data(cls, logentry, _cache_store):
+        tpl = get_template(
+            "pretix_attendance_certificate/history_fragment_attendance_certificate.html"
+        )
+        return tpl.render(
+            {
+                "log": logentry,
+            }
+        )

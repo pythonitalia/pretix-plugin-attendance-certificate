@@ -28,9 +28,21 @@ def control_nav_import(sender, request=None, **kwargs):
                     "organizer": request.event.organizer.slug,
                 },
             ),
-            "active": url.namespace == "plugins:pretix_attendance_certificate",
+            "active": False,
             "icon": "id-card",
             "children": [
+                {
+                    "label": _("Editor"),
+                    "url": reverse(
+                        "plugins:pretix_attendance_certificate:edit",
+                        kwargs={
+                            "event": request.event.slug,
+                            "organizer": request.event.organizer.slug,
+                        },
+                    ),
+                    "active": url.namespace == "plugins:pretix_attendance_certificate"
+                    and url.url_name == "edit",
+                },
                 {
                     "label": _("Send out certificates"),
                     "url": reverse(
@@ -42,7 +54,7 @@ def control_nav_import(sender, request=None, **kwargs):
                     ),
                     "active": url.namespace == "plugins:pretix_attendance_certificate"
                     and url.url_name == "send",
-                }
+                },
             ],
         }
     ]

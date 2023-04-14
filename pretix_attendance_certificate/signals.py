@@ -6,6 +6,8 @@ from pretix.control.signals import (
     nav_event,
 )
 from pretix.plugins.sendmail.signals import sendmail_view_classes
+from pretix.base.signals import logentry_display
+from pretix.base.models import OrderPosition
 
 
 @receiver(nav_event, dispatch_uid="certificate_of_attendance_nav")
@@ -65,3 +67,16 @@ def control_nav_import(sender, request=None, **kwargs):
 )
 def register_sendmail_view(sender, **kwargs):
     return [SendCertificateEmailView]
+
+
+@receiver(
+    signal=logentry_display,
+    dispatch_uid="pretix_attendance_certificate_sendmail_view_logentry_display",
+)
+def logentry_display(sender, logentry, **kwargs):
+    if logentry.action_type == "pretix_attendance_certificate.sent.attendee":
+        order_position = OrderPosition.objects.get(id=logentry.parsed_data["position"])
+        return _(
+            "An email has been sent with the certificate of attendance "
+            'to attendee "{attendee_name}"'
+        ).format(attendee_name=order_position.attendee_name)

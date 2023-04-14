@@ -80,3 +80,12 @@ def logentry_display(sender, logentry, **kwargs):
             "An email has been sent with the certificate of attendance "
             'to attendee "{attendee_name}"'
         ).format(attendee_name=order_position.attendee_name)
+
+    if (
+        logentry.action_type
+        == "pretix.plugins.pretix_attendance_certificate.layout.changed"
+    ):
+        return _("The layout of the certificate of attendance has been changed.")
+
+    if logentry.action_type == "pretix_attendance_certificate.sendmail.sent":
+        return _("The certificate of attendance has been sent out to all attendees.")

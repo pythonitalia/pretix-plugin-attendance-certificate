@@ -73,7 +73,7 @@ def register_sendmail_view(sender, **kwargs):
     signal=logentry_display,
     dispatch_uid="pretix_attendance_certificate_sendmail_view_logentry_display",
 )
-def logentry_display(sender, logentry, **kwargs):
+def pretix_logentry_display(sender, logentry, **kwargs):
     if logentry.action_type == "pretix_attendance_certificate.sent.attendee":
         order_position = OrderPosition.objects.get(id=logentry.parsed_data["position"])
         return _(

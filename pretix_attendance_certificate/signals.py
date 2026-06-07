@@ -1,9 +1,11 @@
 from django.utils.translation import gettext_lazy as _
 from django.urls import resolve, reverse
 from django.dispatch import receiver
+from django.template.loader import get_template
 from pretix_attendance_certificate.views.emails import SendCertificateEmailView
 from pretix.control.signals import (
     nav_event,
+    order_position_buttons,
 )
 from pretix.plugins.sendmail.signals import sendmail_view_classes
 from pretix.base.signals import logentry_display
@@ -67,6 +69,28 @@ def control_nav_import(sender, request=None, **kwargs):
 )
 def register_sendmail_view(sender, **kwargs):
     return [SendCertificateEmailView]
+
+
+@receiver(
+    order_position_buttons,
+    dispatch_uid="pretix_attendance_certificate_order_position_buttons",
+)
+def control_order_position_buttons(sender, position, order, request, **kwargs):
+    if not position.item.admission:
+        return None
+
+    template = get_template(
+        "pretix_attendance_certificate/control_order_position_buttons.html"
+    )
+    return template.render(
+        {
+            "event": sender,
+            "order": order,
+            "position": position,
+            "request": request,
+        },
+        request=request,
+    ).strip()
 
 
 @receiver(

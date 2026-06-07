@@ -2,7 +2,6 @@ from django.contrib import messages
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
-from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 
@@ -19,19 +18,6 @@ DEFAULT_MESSAGE = _(
     "email.\n\n"
     "Best regards"
 )
-
-
-def _localized(event, lazy_string) -> dict:
-    """Resolve a lazy gettext string into an i18n dict for every event locale.
-
-    Celery serializes task kwargs to JSON, so we have to materialize the
-    translations here instead of passing a lazy object through.
-    """
-    data = {}
-    for lng in event.settings.locales:
-        with translation.override(lng):
-            data[lng] = str(lazy_string)
-    return data
 
 
 def _get_position(request, pk) -> OrderPosition:
@@ -77,8 +63,8 @@ class SendCertificateView(EventPermissionRequiredMixin, View):
             kwargs={
                 "event": request.event.pk,
                 "user": request.user.pk,
-                "subject": _localized(request.event, DEFAULT_SUBJECT),
-                "message": _localized(request.event, DEFAULT_MESSAGE),
+                "subject": DEFAULT_SUBJECT,
+                "message": DEFAULT_MESSAGE,
                 "objects": [position.pk],
             }
         )

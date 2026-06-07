@@ -29,7 +29,7 @@ class EditorView(BaseEditorView):
     def get_current_background(self):
         return (
             self.layout.background.url
-            if self.layout.background
+            if self.layout.background and self.layout
             else self.get_default_background()
         )
 

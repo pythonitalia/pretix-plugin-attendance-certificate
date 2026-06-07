@@ -2,7 +2,7 @@
 <a href="{% url "plugins:pretix_attendance_certificate:position.download" event=event.slug organizer=event.organizer.slug position=position.pk %}"
         class="btn btn-xs btn-default" target="_blank">
     <span class="fa fa-id-card"></span>
-    {% trans "Certificate" %}
+    {% trans "Certificate of attendance" %}
 </a>
 {% if position.attendee_email %}
     <form action="{% url "plugins:pretix_attendance_certificate:position.send" event=event.slug organizer=event.organizer.slug position=position.pk %}"
@@ -10,7 +10,7 @@
         {% csrf_token %}
         <button class="btn btn-xs btn-default" type="submit">
             <span class="fa fa-envelope"></span>
-            {% trans "Email certificate" %}
+            {% trans "Email certificate of attendance" %}
         </button>
     </form>
 {% endif %}

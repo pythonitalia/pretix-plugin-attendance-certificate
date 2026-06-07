@@ -12,7 +12,7 @@ from pretix.control.permissions import EventPermissionRequiredMixin
 from pretix_attendance_certificate.render import render_certificate
 from pretix_attendance_certificate.tasks import send_certificate_of_attendance_mails
 
-DEFAULT_SUBJECT = _("Your certificate of attendance")
+DEFAULT_SUBJECT = _("[{event}] Your certificate of attendance")
 DEFAULT_MESSAGE = _(
     "Hello,\n\n"
     "please find your certificate of attendance for {event} attached to this "

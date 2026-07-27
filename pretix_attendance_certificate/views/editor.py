@@ -18,10 +18,13 @@ from django.templatetags.static import static
 class EditorView(BaseEditorView):
     @cached_property
     def layout(self):
-        try:
-            return self.request.event.attendance_certificate_layouts.first()
-        except AttendanceCertificateLayout.DoesNotExist:
-            raise Http404(_("The requested layout does not exist."))
+        layout = self.request.event.attendance_certificate_layouts.first()
+        if layout is None:
+            layout = self.request.event.attendance_certificate_layouts.create(
+                name=_("Default"),
+                default=True,
+            )
+        return layout
 
     def get_default_background(self):
         return static("pretix_attendance_certificate/empty_attendance_certificate.pdf")
@@ -29,7 +32,7 @@ class EditorView(BaseEditorView):
     def get_current_background(self):
         return (
             self.layout.background.url
-            if self.layout.background and self.layout
+            if self.layout and self.layout.background
             else self.get_default_background()
         )
 

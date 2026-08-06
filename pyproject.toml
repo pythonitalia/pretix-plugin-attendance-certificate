@@ -16,7 +16,7 @@ build-backend = "pdm.backend"
 
 [project]
 name = "pretix-plugin-attendance-certificate"
-version = "0.1.14"
+version = "0.1.15"
 description = "Create attendance certificates"
 authors = [
     {name = "Python Italia"},

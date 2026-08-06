@@ -2,6 +2,7 @@ from django.utils.translation import gettext_lazy as _
 from django.urls import resolve, reverse
 from django.dispatch import receiver
 from django.template.loader import get_template
+from django.utils.safestring import mark_safe
 from pretix_attendance_certificate.views.emails import SendCertificateEmailView
 from pretix.control.signals import (
     nav_event,
@@ -82,7 +83,7 @@ def control_order_position_buttons(sender, position, order, request, **kwargs):
     template = get_template(
         "pretix_attendance_certificate/control_order_position_buttons.html"
     )
-    return template.render(
+    return mark_safe(template.render(
         {
             "event": sender,
             "order": order,
@@ -90,7 +91,7 @@ def control_order_position_buttons(sender, position, order, request, **kwargs):
             "request": request,
         },
         request=request,
-    ).strip()
+    ).strip())
 
 
 @receiver(

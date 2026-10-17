@@ -43,7 +43,7 @@ def _order_url(event, order):
 def test_position_buttons_rendered(logged_in_client, event, order, pos, layout):
     response = logged_in_client.get(_order_url(event, order))
     assert response.status_code == 200
-    content = response.rendered_content
+    content = response.content.decode()
     assert _download_url(event, pos) in content
     assert "Email certificate" in content
 
@@ -56,7 +56,7 @@ def test_email_button_hidden_without_attendee_email(
         pos.attendee_email = None
         pos.save()
     response = logged_in_client.get(_order_url(event, order))
-    content = response.rendered_content
+    content = response.content.decode()
     # Download is always available, the email button is not.
     assert _download_url(event, pos) in content
     assert "Email certificate" not in content
@@ -81,7 +81,8 @@ def test_send_certificate_email(logged_in_client, event, order, pos, layout):
 
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["attendee@dummy.test"]
-    assert djmail.outbox[0].subject == "Your certificate of attendance"
+    # pretix >= 2025 prefixes the subject with the event name ("[Dummy] ...").
+    assert djmail.outbox[0].subject.endswith("Your certificate of attendance")
     assert any("attendee@dummy.test" in m for m in _messages(response))
 
     with scopes_disabled():

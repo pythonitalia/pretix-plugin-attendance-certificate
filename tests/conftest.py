@@ -19,6 +19,39 @@ from pretix.base.models import (
 from pretix_attendance_certificate.models import AttendanceCertificateLayout
 
 
+def _accept_legacy_team_kwargs():
+    """pretix >= 2025.x replaced Team.can_view_orders & co. with permission
+    JSON fields. Keep the tests readable by translating the old keyword
+    arguments (no-op on pretix versions that still have them)."""
+    if not hasattr(Team, "limit_event_permissions"):
+        return
+    from pretix.helpers.permission_migration import (
+        OLD_TO_NEW_EVENT_MIGRATION,
+        OLD_TO_NEW_ORGANIZER_MIGRATION,
+    )
+
+    original_init = Team.__init__
+
+    def __init__(self, *args, **kwargs):
+        event_perms, organizer_perms = {}, {}
+        for legacy, new in OLD_TO_NEW_EVENT_MIGRATION.items():
+            if kwargs.pop(legacy, False):
+                event_perms.update({n: True for n in new})
+        for legacy, new in OLD_TO_NEW_ORGANIZER_MIGRATION.items():
+            if kwargs.pop(legacy, False):
+                organizer_perms.update({n: True for n in new})
+        if event_perms:
+            kwargs["limit_event_permissions"] = event_perms
+        if organizer_perms:
+            kwargs["limit_organizer_permissions"] = organizer_perms
+        original_init(self, *args, **kwargs)
+
+    Team.__init__ = __init__
+
+
+_accept_legacy_team_kwargs()
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_fixture_setup(fixturedef, request):
     """Disable django-scopes for all non-yield fixtures.
@@ -75,6 +108,7 @@ def order(event):
         email="dummy@dummy.test",
         datetime=now(),
         locale="en",
+        sales_channel=event.organizer.sales_channels.get(identifier="web"),
     )
 
 
@@ -84,7 +118,6 @@ def pos(order, item):
         order=order,
         item=item,
         price=13,
-        admission=True,
         attendee_name_parts={"_legacy": "Marco Acierno"},
         attendee_email="attendee@dummy.test",
     )

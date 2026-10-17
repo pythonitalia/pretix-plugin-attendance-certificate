@@ -1,5 +1,7 @@
 from django.db import models
+from django.db.models import Q
 from django.utils.crypto import get_random_string
+from i18nfield.fields import I18nCharField, I18nTextField
 import string
 
 from pretix.base.models import LoggedModel
@@ -11,8 +13,8 @@ def bg_name(instance, filename: str) -> str:
         length=16, allowed_chars=string.ascii_letters + string.digits
     )
     return "pub/{org}/{ev}/attendance_certificates/{id}-{secret}.pdf".format(
-        org=instance.event.organizer.slug,
-        ev=instance.event.slug,
+        org=instance.scope_organizer.slug,
+        ev=instance.event.slug if instance.event_id else "_organizer",
         id=instance.pk,
         secret=secret,
     )
@@ -23,6 +25,20 @@ class AttendanceCertificateLayout(LoggedModel):
         "pretixbase.Event",
         on_delete=models.CASCADE,
         related_name="attendance_certificate_layouts",
+        null=True,
+        blank=True,
+    )
+    organizer = models.ForeignKey(
+        "pretixbase.Organizer",
+        on_delete=models.CASCADE,
+        related_name="attendance_certificate_layouts",
+        null=True,
+        blank=True,
+    )
+    active_events = models.ManyToManyField(
+        "pretixbase.Event",
+        blank=True,
+        related_name="active_organizer_certificate_layouts",
     )
     default = models.BooleanField(
         verbose_name=_("Default"),
@@ -39,3 +55,49 @@ class AttendanceCertificateLayout(LoggedModel):
     background = models.FileField(
         null=True, blank=True, upload_to=bg_name, max_length=255
     )
+    mail_subject = I18nCharField(
+        verbose_name=_("Email subject"),
+        max_length=255,
+        default="[{event}] Your certificate of attendance",
+    )
+    mail_text = I18nTextField(
+        verbose_name=_("Email text"),
+        default=(
+            "Hello,\n\n"
+            "please find your certificate of attendance for {event} attached to "
+            "this email.\n\n"
+            "Best regards"
+        ),
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    Q(event__isnull=False, organizer__isnull=True)
+                    | Q(event__isnull=True, organizer__isnull=False)
+                ),
+                name="attendance_certificate_layout_event_xor_organizer",
+            )
+        ]
+
+    @property
+    def scope_organizer(self):
+        return self.organizer or self.event.organizer
+
+    @classmethod
+    def visible_to(cls, event):
+        """All layouts an event may view/manage: its own plus every
+        organizer-wide one, regardless of whether it has been activated."""
+        return cls.objects.filter(Q(event=event) | Q(organizer=event.organizer))
+
+
+def available_layouts(event):
+    """Layouts actually usable for rendering a certificate for this event:
+    its own layouts plus organizer-wide ones explicitly activated for it."""
+    return AttendanceCertificateLayout.objects.filter(
+        Q(event=event) | Q(organizer=event.organizer, active_events=event)
+    ).distinct()

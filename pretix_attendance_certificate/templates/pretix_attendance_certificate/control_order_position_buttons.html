@@ -1,16 +1,40 @@
 {% load i18n %}
-<a href="{% url "plugins:pretix_attendance_certificate:position.download" event=event.slug organizer=event.organizer.slug position=position.pk %}"
-        class="btn btn-xs btn-default" target="_blank">
-    <span class="fa fa-id-card"></span>
-    {% trans "Certificate of attendance" %}
-</a>
-{% if position.attendee_email %}
-    <form action="{% url "plugins:pretix_attendance_certificate:position.send" event=event.slug organizer=event.organizer.slug position=position.pk %}"
-            method="post" class="form-inline helper-display-inline">
-        {% csrf_token %}
-        <button class="btn btn-xs btn-default" type="submit">
-            <span class="fa fa-envelope"></span>
-            {% trans "Email certificate of attendance" %}
-        </button>
-    </form>
+{% if layouts|length > 1 %}
+    {% for l in layouts %}
+        <a href="{% url "plugins:pretix_attendance_certificate:position.download" event=event.slug organizer=event.organizer.slug position=position.pk %}?layout={{ l.pk }}"
+                class="btn btn-xs btn-default" target="_blank">
+            <span class="fa fa-id-card"></span>
+            {{ l.name }}
+        </a>
+    {% endfor %}
+{% else %}
+    <a href="{% url "plugins:pretix_attendance_certificate:position.download" event=event.slug organizer=event.organizer.slug position=position.pk %}"
+            class="btn btn-xs btn-default" target="_blank">
+        <span class="fa fa-id-card"></span>
+        {% trans "Certificate of attendance" %}
+    </a>
+{% endif %}
+{% if position.attendee_email or order.email %}
+    {% if layouts|length > 1 %}
+        {% for l in layouts %}
+            <form action="{% url "plugins:pretix_attendance_certificate:position.send" event=event.slug organizer=event.organizer.slug position=position.pk %}"
+                    method="post" class="form-inline helper-display-inline">
+                {% csrf_token %}
+                <input type="hidden" name="layout" value="{{ l.pk }}">
+                <button class="btn btn-xs btn-default" type="submit">
+                    <span class="fa fa-envelope"></span>
+                    {{ l.name }}
+                </button>
+            </form>
+        {% endfor %}
+    {% else %}
+        <form action="{% url "plugins:pretix_attendance_certificate:position.send" event=event.slug organizer=event.organizer.slug position=position.pk %}"
+                method="post" class="form-inline helper-display-inline">
+            {% csrf_token %}
+            <button class="btn btn-xs btn-default" type="submit">
+                <span class="fa fa-envelope"></span>
+                {% trans "Email certificate of attendance" %}
+            </button>
+        </form>
+    {% endif %}
 {% endif %}

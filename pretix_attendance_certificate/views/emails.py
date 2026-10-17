@@ -1,3 +1,7 @@
+import logging
+
+from django import forms
+from django.templatetags.static import static
 from django.urls import reverse
 from django.template.loader import get_template
 from django.contrib.humanize.templatetags.humanize import intcomma
@@ -7,12 +11,35 @@ from pretix.plugins.sendmail.views import BaseSenderView
 from pretix.plugins.sendmail.forms import BaseMailForm
 from pretix.base.models import OrderPosition, Order
 
+from pretix_attendance_certificate.models import available_layouts
 from pretix_attendance_certificate.tasks import send_certificate_of_attendance_mails
+
+logger = logging.getLogger(__name__)
 
 
 class CertificateEmailForm(BaseMailForm):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        # Only ask which template to use when there actually is a choice -
+        # events with a single available template keep working unchanged.
+        candidates = available_layouts(self.event)
+        if candidates.count() == 1:
+            # Nothing to choose, so start from the template's own email text
+            # instead of offering a button for it. Don't override a resend's
+            # text copied from the email history (?from_log=).
+            layout = candidates.first()
+            self.initial.setdefault("subject", layout.mail_subject)
+            self.initial.setdefault("message", layout.mail_text)
+        elif candidates.count() > 1:
+            self.fields["layout"] = forms.ModelChoiceField(
+                queryset=candidates,
+                label=_("Template"),
+                required=True,
+                help_text=_(
+                    "Multiple templates are available for this event - choose "
+                    "which one to send out."
+                ),
+            )
 
 
 class SendCertificateEmailView(BaseSenderView):
@@ -57,7 +84,38 @@ class SendCertificateEmailView(BaseSenderView):
 
     def get_task_kwargs(self, form, objects):
         kwargs = super().get_task_kwargs(form, objects)
+        if "layout" in form.cleaned_data:
+            kwargs["layout_id"] = form.cleaned_data["layout"].pk
         return kwargs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # Lets the "use this template's email text" button in our form
+        # fragment fill the subject/message fields client-side, without a
+        # round trip - keyed by locale index to match the subject_N/message_N
+        # field names the I18nFormField widget renders.
+        locales = self.request.event.settings.get("locales")
+        ctx["layout_mail_texts"] = {
+            layout.pk: {
+                "subject": [str(layout.mail_subject.localize(loc)) for loc in locales],
+                "message": [str(layout.mail_text.localize(loc)) for loc in locales],
+            }
+            for layout in available_layouts(self.request.event)
+        }
+        # Plugin static files are only in pretix's staticfiles manifest after
+        # `pretix rebuild`/collectstatic. Don't turn a missing entry into a
+        # 500 for the whole send page - the button just stays inactive.
+        try:
+            ctx["use_template_text_js"] = static(
+                "pretix_attendance_certificate/use_template_text.js"
+            )
+        except ValueError:
+            logger.warning(
+                "use_template_text.js is missing from the staticfiles manifest; "
+                "run `pretix rebuild` to enable the template email text button."
+            )
+            ctx["use_template_text_js"] = None
+        return ctx
 
     @classmethod
     def show_history_meta_data(cls, logentry, _cache_store):

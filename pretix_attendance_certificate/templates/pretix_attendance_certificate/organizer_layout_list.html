@@ -1,0 +1,70 @@
+{% extends "pretixcontrol/organizers/base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Certificate of attendance templates" %}{% endblock %}
+{% block inner %}
+    <h1>{% trans "Certificate of attendance templates" %}</h1>
+    <p>
+        {% blocktrans trimmed %}
+            These templates are available to all events of this organizer. Each event can choose
+            which of them to use in addition to its own event-specific templates.
+        {% endblocktrans %}
+    </p>
+    <a href="{% url "plugins:pretix_attendance_certificate:organizer.layouts.add" organizer=request.organizer.slug %}"
+            class="btn btn-default">
+        <span class="fa fa-plus"></span>
+        {% trans "Create a new template" %}
+    </a>
+    <table class="table table-condensed table-hover">
+        <thead>
+        <tr>
+            <th>{% trans "Name" %}</th>
+            <th>{% trans "Used in events" %}</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in layouts %}
+            <tr>
+                <td><strong>
+                    {% if anchor_event %}
+                        <a href="{% url "plugins:pretix_attendance_certificate:edit" organizer=request.organizer.slug event=anchor_event.slug layout=row.layout.pk %}">
+                            {{ row.layout.name }}
+                        </a>
+                    {% else %}
+                        {{ row.layout.name }}
+                    {% endif %}
+                </strong></td>
+                <td>
+                    {% if row.active_events %}
+                        {% for ev in row.active_events %}
+                            <a href="{% url "control:event.index" organizer=request.organizer.slug event=ev.slug %}">{{ ev.name }}</a>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted">{% trans "Not used by any event yet" %}</span>
+                    {% endif %}
+                </td>
+                <td class="text-right flip">
+                    {% if anchor_event %}
+                        <a href="{% url "plugins:pretix_attendance_certificate:edit" organizer=request.organizer.slug event=anchor_event.slug layout=row.layout.pk %}"
+                                class="btn btn-default btn-sm"><i class="fa fa-edit"></i></a>
+                    {% endif %}
+                    <a href="{% url "plugins:pretix_attendance_certificate:organizer.layouts.delete" organizer=request.organizer.slug layout=row.layout.pk %}"
+                            class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="3">{% trans "You haven't created any organizer-wide templates yet." %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if not anchor_event %}
+        <p class="text-muted">
+            {% blocktrans trimmed %}
+                No event of this organizer has the attendance certificate plugin enabled yet, so
+                templates cannot be edited here until one does.
+            {% endblocktrans %}
+        </p>
+    {% endif %}
+{% endblock %}

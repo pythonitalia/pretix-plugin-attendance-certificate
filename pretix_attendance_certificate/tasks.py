@@ -7,14 +7,23 @@ from pretix.base.services.mail import mail
 from pretix.base.i18n import language
 from pretix.helpers.format import format_map
 from pretix.base.email import get_email_context
+from pretix_attendance_certificate.models import AttendanceCertificateLayout
 from pretix_attendance_certificate.render import render_certificate
 
 
 @app.task(base=ProfiledEventTask, acks_late=True)
 def send_certificate_of_attendance_mails(
-    event: Event, user: int, subject: dict, message: dict, objects: list
+    event: Event,
+    user: int,
+    subject: dict,
+    message: dict,
+    objects: list,
+    layout_id: int = None,
 ):
     user = User.objects.get(pk=user) if user else None
+    layout = (
+        AttendanceCertificateLayout.objects.get(pk=layout_id) if layout_id else None
+    )
 
     subject = LazyI18nString(subject)
     message = LazyI18nString(message)
@@ -35,7 +44,10 @@ def send_certificate_of_attendance_mails(
                 position=position,
                 invoice_address=invoice_address,
             )
-            rendered_certificate = render_certificate(position=position, event=event)
+            recipient = position.attendee_email or order.email
+            rendered_certificate = render_certificate(
+                position=position, event=event, layout=layout
+            )
             cache_file = CachedFile.objects.create(
                 filename="certificate_of_attendance.pdf",
                 expires=datetime.datetime.now() + datetime.timedelta(days=7),
@@ -43,7 +55,7 @@ def send_certificate_of_attendance_mails(
             )
 
             mail(
-                position.attendee_email,
+                recipient,
                 subject,
                 message,
                 email_context,
@@ -65,6 +77,6 @@ def send_certificate_of_attendance_mails(
                     "message": format_map(
                         message.localize(order.locale), email_context
                     ),
-                    "recipient": position.attendee_email,
+                    "recipient": recipient,
                 },
             )

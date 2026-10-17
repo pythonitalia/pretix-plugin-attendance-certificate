@@ -6,11 +6,13 @@ from django.utils.safestring import mark_safe
 from pretix_attendance_certificate.views.emails import SendCertificateEmailView
 from pretix.control.signals import (
     nav_event,
+    nav_organizer,
     order_position_buttons,
 )
 from pretix.plugins.sendmail.signals import sendmail_view_classes
 from pretix.base.signals import logentry_display
 from pretix.base.models import OrderPosition
+from pretix_attendance_certificate.models import available_layouts
 
 
 @receiver(nav_event, dispatch_uid="certificate_of_attendance_nav")
@@ -27,7 +29,7 @@ def control_nav_import(sender, request=None, **kwargs):
         {
             "label": _("Certificate of Attendance"),
             "url": reverse(
-                "plugins:pretix_attendance_certificate:edit",
+                "plugins:pretix_attendance_certificate:layouts",
                 kwargs={
                     "event": request.event.slug,
                     "organizer": request.event.organizer.slug,
@@ -37,16 +39,16 @@ def control_nav_import(sender, request=None, **kwargs):
             "icon": "id-card",
             "children": [
                 {
-                    "label": _("Editor"),
+                    "label": _("Templates"),
                     "url": reverse(
-                        "plugins:pretix_attendance_certificate:edit",
+                        "plugins:pretix_attendance_certificate:layouts",
                         kwargs={
                             "event": request.event.slug,
                             "organizer": request.event.organizer.slug,
                         },
                     ),
                     "active": url.namespace == "plugins:pretix_attendance_certificate"
-                    and url.url_name == "edit",
+                    and url.url_name in ("layouts", "edit"),
                 },
                 {
                     "label": _("Send out certificates"),
@@ -61,6 +63,31 @@ def control_nav_import(sender, request=None, **kwargs):
                     and url.url_name == "send",
                 },
             ],
+        }
+    ]
+
+
+@receiver(nav_organizer, dispatch_uid="certificate_of_attendance_nav_organizer")
+def control_nav_organizer_import(sender, request=None, organizer=None, **kwargs):
+    if not request.user.has_organizer_permission(
+        organizer, "can_change_organizer_settings", request=request
+    ):
+        return []
+    if not organizer.events.filter(
+        plugins__icontains="pretix_attendance_certificate"
+    ).exists():
+        return []
+    url = resolve(request.path_info)
+    return [
+        {
+            "label": _("Certificate templates"),
+            "url": reverse(
+                "plugins:pretix_attendance_certificate:organizer.layouts",
+                kwargs={"organizer": organizer.slug},
+            ),
+            "icon": "id-card",
+            "active": url.namespace == "plugins:pretix_attendance_certificate"
+            and url.url_name.startswith("organizer.layouts"),
         }
     ]
 
@@ -89,6 +116,7 @@ def control_order_position_buttons(sender, position, order, request, **kwargs):
             "order": order,
             "position": position,
             "request": request,
+            "layouts": list(available_layouts(sender)),
         },
         request=request,
     ).strip())
@@ -111,6 +139,12 @@ def pretix_logentry_display(sender, logentry, **kwargs):
         == "pretix.plugins.pretix_attendance_certificate.layout.changed"
     ):
         return _("The layout of the certificate of attendance has been changed.")
+
+    if (
+        logentry.action_type
+        == "pretix.plugins.pretix_attendance_certificate.layout.deleted"
+    ):
+        return _("A certificate of attendance template has been deleted.")
 
     if logentry.action_type == "pretix_attendance_certificate.sendmail.sent":
         return _("The certificate of attendance has been sent out to all attendees.")

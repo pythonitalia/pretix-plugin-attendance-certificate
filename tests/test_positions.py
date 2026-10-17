@@ -6,6 +6,8 @@ from django_scopes import scopes_disabled
 
 from pretix.base.models import Team, User
 
+from pretix_attendance_certificate.models import AttendanceCertificateLayout
+
 
 def _messages(response):
     return [str(m) for m in get_messages(response.wsgi_request)]
@@ -43,20 +45,37 @@ def _order_url(event, order):
 def test_position_buttons_rendered(logged_in_client, event, order, pos, layout):
     response = logged_in_client.get(_order_url(event, order))
     assert response.status_code == 200
-    content = response.rendered_content
+    content = response.content.decode()
     assert _download_url(event, pos) in content
     assert "Email certificate" in content
 
 
 @pytest.mark.django_db
-def test_email_button_hidden_without_attendee_email(
+def test_email_button_shown_with_order_email_fallback(
+    logged_in_client, event, order, pos, layout
+):
+    # Group bookings often only have an order-level email, not a per-position
+    # attendee email - the button must still show up in that case.
+    with scopes_disabled():
+        pos.attendee_email = None
+        pos.save()
+    response = logged_in_client.get(_order_url(event, order))
+    content = response.content.decode()
+    assert _download_url(event, pos) in content
+    assert "Email certificate" in content
+
+
+@pytest.mark.django_db
+def test_email_button_hidden_without_any_email(
     logged_in_client, event, order, pos, layout
 ):
     with scopes_disabled():
         pos.attendee_email = None
         pos.save()
+        order.email = None
+        order.save()
     response = logged_in_client.get(_order_url(event, order))
-    content = response.rendered_content
+    content = response.content.decode()
     # Download is always available, the email button is not.
     assert _download_url(event, pos) in content
     assert "Email certificate" not in content
@@ -81,7 +100,8 @@ def test_send_certificate_email(logged_in_client, event, order, pos, layout):
 
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["attendee@dummy.test"]
-    assert djmail.outbox[0].subject == "Your certificate of attendance"
+    # pretix >= 2025 prefixes the subject with the event name ("[Dummy] ...").
+    assert djmail.outbox[0].subject.endswith("Your certificate of attendance")
     assert any("attendee@dummy.test" in m for m in _messages(response))
 
     with scopes_disabled():
@@ -93,15 +113,138 @@ def test_send_certificate_email(logged_in_client, event, order, pos, layout):
 
 
 @pytest.mark.django_db
-def test_send_certificate_without_email(logged_in_client, event, order, pos, layout):
+def test_send_certificate_falls_back_to_order_email(
+    logged_in_client, event, order, pos, layout
+):
     with scopes_disabled():
         pos.attendee_email = None
         pos.save()
     djmail.outbox = []
     response = logged_in_client.post(_send_url(event, pos))
     assert response.status_code == 302
+
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["dummy@dummy.test"]
+    assert any("dummy@dummy.test" in m for m in _messages(response))
+
+    with scopes_disabled():
+        logentry = order.all_logentries().get(
+            action_type="pretix_attendance_certificate.sent.attendee"
+        )
+        assert logentry.parsed_data["recipient"] == "dummy@dummy.test"
+
+
+@pytest.mark.django_db
+def test_send_certificate_with_multiple_layouts_requires_explicit_choice(
+    logged_in_client, event, order, pos, layout, organizer_layout
+):
+    with scopes_disabled():
+        organizer_layout.active_events.add(event)
+    djmail.outbox = []
+    response = logged_in_client.post(_send_url(event, pos))
+    assert response.status_code == 302
+    assert len(djmail.outbox) == 0
+    assert any("multiple templates" in m.lower() for m in _messages(response))
+
+
+@pytest.mark.django_db
+def test_send_certificate_with_explicit_layout_param(
+    logged_in_client, event, order, pos, layout, organizer_layout
+):
+    with scopes_disabled():
+        organizer_layout.active_events.add(event)
+    djmail.outbox = []
+    response = logged_in_client.post(
+        _send_url(event, pos), {"layout": organizer_layout.pk}
+    )
+    assert response.status_code == 302
+    assert len(djmail.outbox) == 1
+
+
+@pytest.mark.django_db
+def test_position_buttons_show_one_send_form_per_layout(
+    logged_in_client, event, order, pos, layout, organizer_layout
+):
+    with scopes_disabled():
+        organizer_layout.active_events.add(event)
+    response = logged_in_client.get(_order_url(event, order))
+    content = response.content.decode()
+    assert content.count('name="layout" value="{}"'.format(layout.pk)) == 1
+    assert content.count('name="layout" value="{}"'.format(organizer_layout.pk)) == 1
+
+
+@pytest.mark.django_db
+def test_send_certificate_without_email(logged_in_client, event, order, pos, layout):
+    with scopes_disabled():
+        pos.attendee_email = None
+        pos.save()
+        order.email = None
+        order.save()
+    djmail.outbox = []
+    response = logged_in_client.post(_send_url(event, pos))
+    assert response.status_code == 302
     assert len(djmail.outbox) == 0
     assert any("no email" in m.lower() for m in _messages(response))
+
+
+@pytest.mark.django_db
+def test_download_without_any_layout(logged_in_client, event, order, pos):
+    response = logged_in_client.get(_download_url(event, pos))
+    assert response.status_code == 302
+    assert any(
+        "no certificate of attendance layout" in m.lower()
+        for m in _messages(response)
+    )
+
+
+@pytest.mark.django_db
+def test_download_with_multiple_layouts_requires_explicit_choice(
+    logged_in_client, event, order, pos, layout, organizer_layout
+):
+    with scopes_disabled():
+        organizer_layout.active_events.add(event)
+
+    # Both layout names show up as separate buttons on the order page.
+    response = logged_in_client.get(_order_url(event, order))
+    content = response.content.decode()
+    assert layout.name in content
+    assert organizer_layout.name in content
+
+    # Downloading without picking one is an error, not a silent guess.
+    response = logged_in_client.get(_download_url(event, pos))
+    assert response.status_code == 302
+    assert any(
+        "multiple templates" in m.lower() for m in _messages(response)
+    )
+
+
+@pytest.mark.django_db
+def test_download_with_explicit_layout_param(
+    logged_in_client, event, order, pos, layout, organizer_layout
+):
+    with scopes_disabled():
+        organizer_layout.active_events.add(event)
+
+    response = logged_in_client.get(_download_url(event, pos) + "?layout={}".format(
+        organizer_layout.pk
+    ))
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/pdf"
+
+
+@pytest.mark.django_db
+def test_download_with_layout_param_not_available_for_event(
+    logged_in_client, event, order, pos, layout
+):
+    with scopes_disabled():
+        other_layout = AttendanceCertificateLayout.objects.create(
+            organizer=event.organizer, name="Not activated"
+        )
+    response = logged_in_client.get(
+        _download_url(event, pos) + "?layout={}".format(other_layout.pk)
+    )
+    assert response.status_code == 302
+    assert any("not available" in m.lower() for m in _messages(response))
 
 
 @pytest.mark.django_db

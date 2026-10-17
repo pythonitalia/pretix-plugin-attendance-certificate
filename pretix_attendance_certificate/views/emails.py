@@ -1,3 +1,4 @@
+from django import forms
 from django.urls import reverse
 from django.template.loader import get_template
 from django.contrib.humanize.templatetags.humanize import intcomma
@@ -7,12 +8,26 @@ from pretix.plugins.sendmail.views import BaseSenderView
 from pretix.plugins.sendmail.forms import BaseMailForm
 from pretix.base.models import OrderPosition, Order
 
+from pretix_attendance_certificate.models import available_layouts
 from pretix_attendance_certificate.tasks import send_certificate_of_attendance_mails
 
 
 class CertificateEmailForm(BaseMailForm):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        # Only ask which template to use when there actually is a choice -
+        # events with a single available template keep working unchanged.
+        candidates = available_layouts(self.event)
+        if candidates.count() > 1:
+            self.fields["layout"] = forms.ModelChoiceField(
+                queryset=candidates,
+                label=_("Template"),
+                required=True,
+                help_text=_(
+                    "Multiple templates are available for this event - choose "
+                    "which one to send out."
+                ),
+            )
 
 
 class SendCertificateEmailView(BaseSenderView):
@@ -57,6 +72,8 @@ class SendCertificateEmailView(BaseSenderView):
 
     def get_task_kwargs(self, form, objects):
         kwargs = super().get_task_kwargs(form, objects)
+        if "layout" in form.cleaned_data:
+            kwargs["layout_id"] = form.cleaned_data["layout"].pk
         return kwargs
 
     @classmethod

@@ -1,3 +1,21 @@
 {% load i18n %}
 {% load bootstrap3 %}
-{% trans 'This email will be sent to all attendees with an admission ticket' %}
+<p>{% trans 'This email will be sent to all attendees with an admission ticket. If the template is tied to a check-in list, only to those checked in on that list.' %}</p>
+{% if form.layout %}
+    {% bootstrap_field form.layout layout="horizontal" %}
+    <div class="form-group">
+        <div class="col-md-9 col-md-offset-3">
+            <button type="button" id="attendance-certificate-use-template-text"
+                    class="btn btn-default btn-sm">
+                {% trans "Use this template's email text" %}
+            </button>
+            <p class="help-block">
+                {% trans "Fills the subject/text below from the selected template - you can still edit them afterwards." %}
+            </p>
+        </div>
+    </div>
+    {{ layout_mail_texts|json_script:"attendance-certificate-mail-texts" }}
+    {% if use_template_text_js %}
+        <script src="{{ use_template_text_js }}"></script>
+    {% endif %}
+{% endif %}

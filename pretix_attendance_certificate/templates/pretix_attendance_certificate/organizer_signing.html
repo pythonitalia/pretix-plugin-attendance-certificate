@@ -1,0 +1,132 @@
+{% extends "pretixcontrol/organizers/base.html" %}
+{% load i18n %}
+{% load bootstrap3 %}
+{% block title %}{% trans "Digital signature" %}{% endblock %}
+{% block inner %}
+    <h1>{% trans "Digital signature of certificates of attendance" %}</h1>
+    <p>
+        {% blocktrans trimmed %}
+            Every certificate of attendance of this organizer can be signed with a certificate of
+            your organization. PDF readers then show whether the document really comes from you
+            and whether it has been modified since. The signature is invisible; readers display it
+            in their signature panel.
+        {% endblocktrans %}
+    </p>
+
+    {% if current %}
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">{% trans "Current certificate" %}</h3></div>
+            <div class="panel-body">
+                <dl class="dl-horizontal">
+                    <dt>{% trans "Signer" %}</dt>
+                    <dd>{{ info.subject }}</dd>
+                    <dt>{% trans "Valid from" %}</dt>
+                    <dd>{{ info.not_before|date:"SHORT_DATETIME_FORMAT" }}</dd>
+                    <dt>{% trans "Valid until" %}</dt>
+                    <dd>{{ info.not_after|date:"SHORT_DATETIME_FORMAT" }}
+                        {% if info.expired %}
+                            <span class="label label-danger">{% trans "expired" %}</span>
+                        {% endif %}
+                    </dd>
+                    <dt>{% trans "SHA-256 fingerprint" %}</dt>
+                    <dd><code>{{ info.fingerprint }}</code></dd>
+                    <dt>{% trans "Embedded CA chain" %}</dt>
+                    <dd>
+                        {% for c in chain %}
+                            {{ c.subject }}<br><code>{{ c.fingerprint }}</code>{% if not forloop.last %}<br>{% endif %}
+                        {% empty %}
+                            <span class="text-muted">{% trans "none" %}</span>
+                        {% endfor %}
+                    </dd>
+                </dl>
+                <p>
+                    <a class="btn btn-default"
+                            href="{% url "plugins:pretix_attendance_certificate:organizer.signing.certificate" organizer=request.organizer.slug %}">
+                        <span class="fa fa-download"></span> {% trans "Download public certificate" %}
+                    </a>
+                </p>
+                <p class="help-block">
+                    {% blocktrans trimmed %}
+                        Publish the public certificate (e.g. on your website, together with the
+                        fingerprint) so recipients can add it to their PDF reader's trusted
+                        certificates and verify your signature. Without that, readers show the
+                        signer as "unknown", but still detect later modifications. CA certificates
+                        contained in an imported file are embedded in every signed PDF; readers
+                        offer to trust them, but recipients should compare the fingerprint with
+                        the one you published.
+                    {% endblocktrans %}
+                </p>
+                {% if info.expired %}
+                    <div class="alert alert-danger">
+                        {% trans "This certificate has expired. Replace it below." %}
+                    </div>
+                {% endif %}
+                <form class="form-horizontal" action="" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="settings">
+                    {% bootstrap_form settings_form layout="control" %}
+                    <div class="form-group submit-group">
+                        <button type="submit" class="btn btn-primary btn-save">{% trans "Save" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            {% trans "No certificate is configured. Certificates of attendance are not signed." %}
+        </div>
+    {% endif %}
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">{% trans "Create a self-signed certificate" %}</h3>
+        </div>
+        <div class="panel-body">
+            {% if current %}
+                <div class="alert alert-warning">
+                    {% trans "This replaces the current certificate. Signatures of already sent documents stay valid, but you need to publish the new public certificate." %}
+                </div>
+            {% endif %}
+            <form class="form-horizontal" action="" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="generate">
+                {% bootstrap_form generate_form layout="control" %}
+                <div class="form-group submit-group">
+                    <button type="submit" class="btn btn-primary btn-save">{% trans "Create certificate" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">{% trans "Import an existing certificate" %}</h3>
+        </div>
+        <div class="panel-body">
+            <form class="form-horizontal" action="" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="import">
+                {% bootstrap_form import_form layout="control" %}
+                <div class="form-group submit-group">
+                    <button type="submit" class="btn btn-primary btn-save">{% trans "Import" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if current %}
+        <form action="" method="post" class="form-inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <button type="submit" class="btn btn-danger">
+                <span class="fa fa-trash"></span> {% trans "Remove certificate (stop signing)" %}
+            </button>
+        </form>
+    {% endif %}
+    <p class="text-muted">
+        {% blocktrans trimmed %}
+            The private key is stored in the pretix database and never leaves the server.
+            Back up your database accordingly.
+        {% endblocktrans %}
+    </p>
+{% endblock %}

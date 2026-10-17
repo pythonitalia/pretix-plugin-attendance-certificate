@@ -1,12 +1,762 @@
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
+"Project-Id-Version: pretix-attendance-certificate\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-07 19:01+0100\n"
-"PO-Revision-Date: \n"
-"Last-Translator: Python Italia\n"
-"Language-Team: \n"
-"Language: de\n"
+"POT-Creation-Date: 2026-10-05 01:08+0000\n"
+"PO-Revision-Date: 2026-10-04 22:31\n"
+"Last-Translator: Erik Thiel <erik.thiel@jdav-hessen.de>\n"
+"Language-Team: German (informal)\n"
+"Language: de_Informal\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps.py:16 views/emails.py:49
+msgid "Attendance Certificate"
+msgstr "Teilnahmebescheinigung"
+
+#: apps.py:18
+msgid "Create Attendance Certificates for your attendees"
+msgstr "Erstelle Teilnahmebescheinigungen für deine Teilnehmer*innen"
+
+#: apps.py:30 models.py:47 views/editor.py:58
+msgid "Default"
+msgstr ""
+
+#: forms.py:20
+#, python-brace-format
+msgid ""
+"Placeholders: {event} (event name), {name} (attendee's full name), "
+"{name_for_salutation} (name as used in a salutation, e.g. \"Mr Doe\"), "
+"{code} (order code), {url} (link to the order page). Heads-up: "
+"{name_given_name} (first name) and {name_family_name} (last name) only exist"
+" for events that collect the name in parts. For any other event they are "
+"sent as literal text, so use {name} if the template is shared between "
+"events. Which further placeholders exist (e.g. event meta data) depends on "
+"the event."
+msgstr ""
+"Platzhalter: {event} (Veranstaltungsname), {name} (vollständiger Name der "
+"Teilnehmer*in), {name_for_salutation} (Name, wie er in einer Anrede "
+"verwendet wird, z. B. „Herr Doe“), {code} (Code der Anmeldung), {url} (Link "
+"zur Seite der Anmeldung). Hinweis: {name_given_name} (Vorname) und "
+"{name_family_name} (Nachname) gibt es nur bei Veranstaltungen, die den Namen"
+" in Teilen abfragen. Bei allen anderen Veranstaltungen werden sie als "
+"Klartext verschickt – verwende daher {name}, wenn die Vorlage von mehreren "
+"Veranstaltungen genutzt wird. Welche weiteren Platzhalter es gibt (z. B. "
+"Metadaten der Veranstaltung), hängt von der Veranstaltung ab."
+
+#: forms.py:78
+msgid "Please enter the address of a timestamp server."
+msgstr "Bitte gib die Adresse eines Zeitstempel-Servers ein."
+
+#: forms.py:91 models.py:50
+#: templates/pretix_attendance_certificate/event_layout_list.html:69
+#: templates/pretix_attendance_certificate/event_layout_list.html:130
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:25
+msgid "Name"
+msgstr "Name"
+
+#: forms.py:92
+msgid "Shown as the signer, e.g. the name of your organization."
+msgstr "Wird als Unterzeichner angezeigt, z. B. der Name deiner Organisation."
+
+#: forms.py:95
+msgid "Organization"
+msgstr "Organisation"
+
+#: forms.py:101
+msgid "Validity in years"
+msgstr "Gültigkeit in Jahren"
+
+#: forms.py:103
+msgid ""
+"Signed documents stay verifiable after expiry, but new certificates can only"
+" be signed with a certificate you replace in time."
+msgstr ""
+"Signierte Dokumente bleiben auch nach dem Ablauf prüfbar, neue "
+"Bescheinigungen kannst du aber nur mit einem gültigen Zertifikat signieren. "
+"Ersetze es deshalb rechtzeitig."
+
+#: forms.py:112
+msgid "Certificate with private key (.p12 / .pfx)"
+msgstr "Zertifikat mit privatem Schlüssel (.p12 / .pfx)"
+
+#: forms.py:116
+msgid "Password"
+msgstr "Passwort"
+
+#: forms.py:130
+msgid "The file could not be read. Check the file and the password."
+msgstr ""
+"Die Datei konnte nicht gelesen werden. Prüfe die Datei und das Passwort."
+
+#: models.py:62
+msgid "Email subject"
+msgstr ""
+
+#: models.py:67
+msgid "Email text"
+msgstr "E-Mail-Text"
+
+#: models.py:102
+msgid "Off"
+msgstr "Aus"
+
+#: models.py:103
+msgid "On, if possible (sign without if unreachable)"
+msgstr "An, wenn möglich (ohne Zeitstempel signieren, falls nicht erreichbar)"
+
+#: models.py:104
+msgid "On, required (fail if unreachable)"
+msgstr "An, erforderlich (Fehler, falls nicht erreichbar)"
+
+#: models.py:127
+msgid "Sign certificates of attendance"
+msgstr "Teilnahmebescheinigungen signieren"
+
+#: models.py:129
+msgid ""
+"If enabled, every certificate of attendance of this organizer is digitally "
+"signed with this certificate."
+msgstr ""
+"Wenn aktiviert, wird jede Teilnahmebescheinigung dieses Veranstalters mit "
+"diesem Zertifikat digital signiert."
+
+#: models.py:137
+msgid "Reason"
+msgstr "Grund"
+
+#: models.py:138
+msgid "Stored in the signature, shown by PDF readers."
+msgstr "Wird in der Signatur gespeichert und von PDF-Readern angezeigt."
+
+#: models.py:144
+msgid "Trusted timestamp"
+msgstr "Vertrauenswürdiger Zeitstempel"
+
+#: models.py:146
+msgid ""
+"A timestamp from an independent time stamping authority (RFC 3161) proves "
+"when a certificate was signed and keeps the signature verifiable after your "
+"certificate expires. If the authority is unreachable, \"if possible\" signs "
+"without a timestamp and logs a warning, \"required\" refuses to create the "
+"certificate (e.g. the mail run stops)."
+msgstr ""
+"Ein Zeitstempel einer unabhängigen Zeitstempelstelle (RFC 3161) belegt, wann"
+" eine Bescheinigung signiert wurde, und hält die Signatur auch nach dem "
+"Ablauf deines Zertifikats prüfbar. Ist die Zeitstempelstelle nicht "
+"erreichbar, signiert „An, wenn möglich“ ohne Zeitstempel und schreibt eine "
+"Warnung ins Log, „An, erforderlich“ erstellt die Bescheinigung nicht (z. B. "
+"bricht dann der E-Mail-Versand ab)."
+
+#: models.py:157
+msgid "Timestamp server URL"
+msgstr "Adresse des Zeitstempel-Servers"
+
+#: models.py:159
+msgid ""
+"Address of the time stamping authority, e.g. http://timestamp.digicert.com "
+"or http://timestamp.sectigo.com. Only a hash of the signature is sent, never"
+" the document."
+msgstr ""
+"Adresse der Zeitstempelstelle, z. B. http://timestamp.digicert.com oder "
+"http://timestamp.sectigo.com. Es wird nur ein Hash der Signatur gesendet, "
+"nie das Dokument."
+
+#: models.py:196
+msgid "Check-in list"
+msgstr ""
+
+#: models.py:198
+msgid ""
+"Only attendees checked in on this list are eligible for the template. Leave "
+"empty to make it available to everyone."
+msgstr ""
+"Nur Teilnehmer*innen, die auf dieser Liste eingecheckt sind. Leer lassen für"
+" alle Teilnehmer*innen."
+
+#: models.py:205
+#: templates/pretix_attendance_certificate/event_layout_list.html:103
+msgid "Active"
+msgstr ""
+
+#: models.py:207
+msgid ""
+"Deactivated templates are not offered for this event. This is set "
+"automatically when the tied check-in list is deleted."
+msgstr ""
+"Deaktivierte Vorlagen werden für diese Veranstaltung nicht angeboten. Das "
+"passiert automatisch, wenn die verknüpfte Check-in-Liste gelöscht wird."
+
+#: render.py:60 signals.py:42
+#: templates/pretix_attendance_certificate/control_order_position_buttons.html:12
+#: templates/pretix_attendance_certificate/control_order_position_buttons.html:17
+#: templates/pretix_attendance_certificate/presale_certificates.html:4
+#: views/signing.py:68
+msgid "Certificate of attendance"
+msgstr "Teilnahmebescheinigung"
+
+#: signals.py:54
+msgid "Templates"
+msgstr "Vorlagen"
+
+#: signals.py:66
+msgid "Send out certificates"
+msgstr "Bescheinigungen verschicken"
+
+#: signals.py:95
+msgid "Certificate templates"
+msgstr "Bescheinigungsvorlagen"
+
+#: signals.py:282
+#, python-brace-format
+msgid ""
+"An email has been sent with the certificate of attendance to attendee "
+"\"{attendee_name}\""
+msgstr ""
+"Eine E-Mail mit der Teilnahmebescheinigung wurde an „{attendee_name}“ "
+"gesendet."
+
+#: signals.py:290
+msgid "The layout of the certificate of attendance has been changed."
+msgstr "Das Layout der Teilnahmebescheinigung wurde geändert."
+
+#: signals.py:296
+msgid "A certificate of attendance template has been deleted."
+msgstr "Eine Vorlage für Teilnahmebescheinigungen wurde gelöscht."
+
+#: signals.py:303
+#, python-brace-format
+msgid ""
+"The certificate template \"{layout}\" was deactivated because its check-in "
+"list \"{checkin_list}\" was deleted."
+msgstr ""
+"Die Bescheinigungsvorlage „{layout}“ wurde deaktiviert, weil ihre Check-in-"
+"Liste „{checkin_list}“ gelöscht wurde."
+
+#: signals.py:314
+msgid "The signing certificate for certificates of attendance was changed."
+msgstr ""
+"Das Zertifikat zum Signieren der Teilnahmebescheinigungen wurde geändert."
+
+#: signals.py:317
+msgid "The certificate of attendance has been sent out to all attendees."
+msgstr "Die Teilnahmebescheinigung wurde an alle Teilnehmer*innen verschickt."
+
+#: signing.py:245
+msgid "Only http(s) addresses are allowed."
+msgstr "Es sind nur http(s)-Adressen erlaubt."
+
+#: signing.py:249
+msgid "The host name could not be resolved."
+msgstr "Der Hostname konnte nicht aufgelöst werden."
+
+#: signing.py:252
+msgid "Addresses in internal networks are not allowed."
+msgstr "Adressen in internen Netzen sind nicht erlaubt."
+
+#: templates/pretix_attendance_certificate/control_order_position_buttons.html:15
+#: templates/pretix_attendance_certificate/control_order_position_buttons.html:28
+#, python-format
+msgid "Not checked in on \"%(list)s\""
+msgstr "Nicht auf „%(list)s“ eingecheckt"
+
+#: templates/pretix_attendance_certificate/control_order_position_buttons.html:30
+msgid "Email certificate of attendance"
+msgstr "Teilnahmebescheinigung per E-Mail senden"
+
+#: templates/pretix_attendance_certificate/event_layout_delete.html:3
+#: templates/pretix_attendance_certificate/organizer_layout_delete.html:3
+msgid "Delete template"
+msgstr "Vorlage löschen"
+
+#: templates/pretix_attendance_certificate/event_layout_delete.html:5
+#: templates/pretix_attendance_certificate/organizer_layout_delete.html:5
+msgid "Delete template:"
+msgstr "Vorlage löschen:"
+
+#: templates/pretix_attendance_certificate/event_layout_delete.html:9
+msgid "Are you sure you want to delete this template?"
+msgstr "Bist du sicher, dass du diese Vorlage löschen möchtest?"
+
+#: templates/pretix_attendance_certificate/event_layout_delete.html:16
+#: templates/pretix_attendance_certificate/organizer_layout_delete.html:17
+msgid "Cancel"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/event_layout_delete.html:19
+#: templates/pretix_attendance_certificate/organizer_layout_delete.html:20
+msgid "Delete"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/event_layout_edit.html:5
+#: templates/pretix_attendance_certificate/organizer_layout_edit.html:5
+msgid "Edit template"
+msgstr "Vorlage bearbeiten"
+
+#: templates/pretix_attendance_certificate/event_layout_edit.html:5
+#: templates/pretix_attendance_certificate/event_layout_edit.html:10
+#: templates/pretix_attendance_certificate/organizer_layout_edit.html:5
+#: templates/pretix_attendance_certificate/organizer_layout_edit.html:10
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:15
+msgid "Create a new template"
+msgstr "Neue Vorlage erstellen"
+
+#: templates/pretix_attendance_certificate/event_layout_edit.html:9
+#: templates/pretix_attendance_certificate/organizer_layout_edit.html:9
+#, python-format
+msgid "Edit template: %(name)s"
+msgstr "Vorlage bearbeiten: %(name)s"
+
+#: templates/pretix_attendance_certificate/event_layout_edit.html:17
+#: templates/pretix_attendance_certificate/event_layout_list.html:55
+#: templates/pretix_attendance_certificate/organizer_layout_edit.html:17
+#: templates/pretix_attendance_certificate/organizer_signing.html:69
+msgid "Save"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:3
+#: templates/pretix_attendance_certificate/event_layout_list.html:5
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:3
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:5
+msgid "Certificate of attendance templates"
+msgstr "Vorlagen für Teilnahmebescheinigungen"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:7
+msgid "Who gets which certificate"
+msgstr "Wer bekommt welche Bescheinigung"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:9
+msgid ""
+"Tie a template to a check-in list (for example \"Passed the course\") so "
+"only attendees checked in on that list are eligible for it. Attendees can be"
+" eligible for several templates."
+msgstr ""
+"Verknüpfe eine Vorlage mit einer Check-in-Liste (z. B. „Kurs bestanden“), "
+"damit nur Teilnehmer*innen dafür in Frage kommen, die auf dieser Liste "
+"eingecheckt sind. Teilnehmer*innen können für mehrere Vorlagen in Frage "
+"kommen."
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:21
+#: views/emails.py:30
+msgid "Template"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:22
+msgid "Only for attendees checked in on"
+msgstr "Nur für Teilnehmer*innen, die eingecheckt sind auf"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:31
+msgid "Everyone"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:40
+msgid "No templates are available for this event yet."
+msgstr "Für diese Veranstaltung sind noch keine Vorlagen verfügbar."
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:48
+msgid "Let attendees download their certificate from their order page"
+msgstr ""
+"Teilnehmer*innen können ihre Bescheinigung auf der Seite ihrer Anmeldung "
+"herunterladen"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:51
+msgid ""
+"Only for paid orders, after the event is over, and only for attendees who "
+"were checked in on any check-in list. Templates tied to a check-in list "
+"additionally need a check-in on that list."
+msgstr ""
+"Nur für bezahlte Anmeldungen, nach Ende der Veranstaltung und nur für "
+"Teilnehmer*innen, die auf irgendeiner Check-in-Liste eingecheckt wurden. "
+"Vorlagen, die mit einer Check-in-Liste verknüpft sind, erfordern zusätzlich "
+"einen Check-in auf dieser Liste."
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:59
+msgid "Organizer-wide templates"
+msgstr "Veranstalterweite Vorlagen"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:61
+msgid ""
+"These templates are managed centrally for your whole organizer. Activate the"
+" ones you want to use for this event."
+msgstr ""
+"Diese Vorlagen werden zentral für deinen gesamten Veranstalter verwaltet. "
+"Aktiviere die, die du für diese Veranstaltung nutzen möchtest."
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:70
+msgid "Used for this event"
+msgstr "Für diese Veranstaltung genutzt"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:93
+msgid "Active - click to deactivate"
+msgstr "Aktiv – zum Deaktivieren klicken"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:97
+msgid "Inactive - click to activate"
+msgstr "Inaktiv – zum Aktivieren klicken"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:105
+msgid "Inactive"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:113
+msgid "Your organizer has not created any templates yet."
+msgstr "Dein Veranstalter hat noch keine Vorlagen erstellt."
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:119
+msgid "Templates for this event only"
+msgstr "Vorlagen nur für diese Veranstaltung"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:124
+msgid "Create a new template for this event"
+msgstr "Neue Vorlage für diese Veranstaltung erstellen"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:144
+msgid "Deactivated"
+msgstr "Deaktiviert"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:153
+msgid "Deactivate"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:156
+msgid "Make sure the template is tied to the right check-in list afterwards."
+msgstr ""
+"Stelle danach sicher, dass die Vorlage mit der richtigen Check-in-Liste "
+"verknüpft ist."
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:157
+msgid "Reactivate"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:162
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:50
+msgid "Edit layout"
+msgstr "Layout bearbeiten"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:164
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:53
+msgid "Edit name and email text"
+msgstr "Namen und E-Mail-Text bearbeiten"
+
+#: templates/pretix_attendance_certificate/event_layout_list.html:173
+msgid "You haven't created any event-specific templates yet."
+msgstr "Du hast noch keine veranstaltungsspezifischen Vorlagen erstellt."
+
+#: templates/pretix_attendance_certificate/history_fragment_attendance_certificate.html:2
+msgid "Sent to attendees"
+msgstr "An Teilnehmer*innen gesendet"
+
+#: templates/pretix_attendance_certificate/organizer_layout_delete.html:9
+msgid ""
+"Are you sure you want to delete this template? It will no longer be "
+"available for any event, even if it is currently activated there."
+msgstr ""
+"Bist du sicher, dass du diese Vorlage löschen möchtest? Sie ist danach für "
+"keine Veranstaltung mehr verfügbar, auch wenn sie dort aktuell aktiviert "
+"ist."
+
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:7
+msgid ""
+"These templates are available to all events of this organizer. Each event "
+"can choose which of them to use in addition to its own event-specific "
+"templates."
+msgstr ""
+"Diese Vorlagen stehen allen Veranstaltungen dieses Veranstalters zur "
+"Verfügung. Jede Veranstaltung kann wählen, welche davon sie zusätzlich zu "
+"ihren eigenen Vorlagen nutzt."
+
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:20
+#: templates/pretix_attendance_certificate/organizer_signing.html:4
+msgid "Digital signature"
+msgstr "Digitale Signatur"
+
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:26
+msgid "Used in events"
+msgstr "In Veranstaltungen genutzt"
+
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:44
+msgid "Not used by any event yet"
+msgstr "Noch von keiner Veranstaltung genutzt"
+
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:60
+msgid "You haven't created any organizer-wide templates yet."
+msgstr "Du hast noch keine veranstalterweiten Vorlagen erstellt."
+
+#: templates/pretix_attendance_certificate/organizer_layout_list.html:67
+msgid ""
+"No event of this organizer has the attendance certificate plugin enabled "
+"yet, so the visual layout cannot be edited here until one does (name and "
+"email text can still be edited regardless)."
+msgstr ""
+"Bei keiner Veranstaltung dieses Veranstalters ist das "
+"Teilnahmebescheinigungs-Plugin bisher aktiviert. Das visuelle Layout kann "
+"hier deshalb erst bearbeitet werden, wenn es bei einer aktiviert ist (Name "
+"und E-Mail-Text lassen sich trotzdem bearbeiten)."
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:6
+msgid "Digital signature of certificates of attendance"
+msgstr "Digitale Signatur der Teilnahmebescheinigungen"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:8
+msgid ""
+"Every certificate of attendance of this organizer can be signed with a "
+"certificate of your organization. PDF readers then show whether the document"
+" really comes from you and whether it has been modified since. The signature"
+" is invisible; readers display it in their signature panel."
+msgstr ""
+"Jede Teilnahmebescheinigung dieses Veranstalters kann mit einem Zertifikat "
+"deiner Organisation signiert werden. PDF-Reader zeigen dann an, ob das "
+"Dokument wirklich von dir stammt und ob es seitdem verändert wurde. Die "
+"Signatur ist unsichtbar; Reader zeigen sie in ihrem Signaturbereich an."
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:18
+msgid "Current certificate"
+msgstr "Aktuelles Zertifikat"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:21
+msgid "Signer"
+msgstr "Unterzeichner"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:23
+msgid "Valid from"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:25
+msgid "Valid until"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:28
+msgid "expired"
+msgstr ""
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:31
+msgid "SHA-256 fingerprint"
+msgstr "SHA-256-Fingerabdruck"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:33
+msgid "Embedded CA chain"
+msgstr "Eingebettete CA-Kette"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:38
+msgid "none"
+msgstr "keine"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:45
+msgid "Download public certificate"
+msgstr "Öffentliches Zertifikat herunterladen"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:49
+msgid ""
+"Publish the public certificate (e.g. on your website, together with the "
+"fingerprint) so recipients can add it to their PDF reader's trusted "
+"certificates and verify your signature. Without that, readers show the "
+"signer as \"unknown\", but still detect later modifications. CA certificates"
+" contained in an imported file are embedded in every signed PDF; readers "
+"offer to trust them, but recipients should compare the fingerprint with the "
+"one you published."
+msgstr ""
+"Veröffentliche das öffentliche Zertifikat (z. B. auf deiner Website, "
+"zusammen mit dem Fingerabdruck), damit Empfänger*innen es zu den "
+"vertrauenswürdigen Zertifikaten ihres PDF-Readers hinzufügen und deine "
+"Signatur prüfen können. Ohne das zeigen Reader den Unterzeichner als "
+"„unbekannt“ an, erkennen spätere Änderungen aber trotzdem. CA-Zertifikate "
+"aus einer importierten Datei werden in jede signierte PDF eingebettet; "
+"Reader bieten an, ihnen zu vertrauen. Empfänger*innen sollten aber den "
+"Fingerabdruck mit dem von dir veröffentlichten vergleichen."
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:61
+msgid "This certificate has expired. Replace it below."
+msgstr "Dieses Zertifikat ist abgelaufen. Ersetze es unten."
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:76
+msgid ""
+"No certificate is configured. Certificates of attendance are not signed."
+msgstr ""
+"Es ist kein Zertifikat hinterlegt. Teilnahmebescheinigungen werden nicht "
+"signiert."
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:82
+msgid "Create a self-signed certificate"
+msgstr "Selbstsigniertes Zertifikat erstellen"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:87
+msgid ""
+"This replaces the current certificate. Signatures of already sent documents "
+"stay valid, but you need to publish the new public certificate."
+msgstr ""
+"Dadurch wird das aktuelle Zertifikat ersetzt. Signaturen bereits versendeter"
+" Dokumente bleiben gültig, du musst aber das neue öffentliche Zertifikat "
+"veröffentlichen."
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:95
+msgid "Create certificate"
+msgstr "Zertifikat erstellen"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:103
+msgid "Import an existing certificate"
+msgstr "Vorhandenes Zertifikat importieren"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:111
+msgid "Import"
+msgstr "Importieren"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:122
+msgid "Remove certificate (stop signing)"
+msgstr "Zertifikat entfernen (Signieren beenden)"
+
+#: templates/pretix_attendance_certificate/organizer_signing.html:127
+msgid ""
+"The private key is stored in the pretix database and never leaves the "
+"server. Back up your database accordingly."
+msgstr ""
+"Der private Schlüssel liegt in der pretix-Datenbank und verlässt den Server "
+"nie. Sichere deine Datenbank entsprechend."
+
+#: templates/pretix_attendance_certificate/presale_certificates.html:15
+msgid "Download certificate of attendance"
+msgstr "Teilnahmebescheinigung herunterladen"
+
+#: templates/pretix_attendance_certificate/send_form_fragment_attendance_certificate.html:3
+msgid ""
+"This email will be sent to all attendees with an admission ticket. If the "
+"template is tied to a check-in list, only to those checked in on that list."
+msgstr ""
+"Diese E-Mail wird an alle Teilnehmer*innen mit einem Einlass-Ticket "
+"gesendet. Ist die Vorlage mit einer Check-in-Liste verknüpft, nur an die, "
+"die auf dieser Liste eingecheckt sind."
+
+#: templates/pretix_attendance_certificate/send_form_fragment_attendance_certificate.html:10
+msgid "Use this template's email text"
+msgstr "E-Mail-Text dieser Vorlage verwenden"
+
+#: templates/pretix_attendance_certificate/send_form_fragment_attendance_certificate.html:13
+msgid ""
+"Fills the subject/text below from the selected template - you can still edit"
+" them afterwards."
+msgstr ""
+"Füllt Betreff und Text unten aus der gewählten Vorlage – du kannst sie "
+"danach noch bearbeiten."
+
+#: views/editor.py:45 views/event_templates.py:76
+msgid "You do not have permission to view this content."
+msgstr ""
+
+#: views/editor.py:138
+msgid "Attendance Certificate layout"
+msgstr "Layout der Teilnahmebescheinigung"
+
+#: views/emails.py:33
+msgid ""
+"Multiple templates are available for this event - choose which one to send "
+"out. Templates tied to a check-in list only go to attendees checked in on "
+"that list."
+msgstr ""
+"Für diese Veranstaltung sind mehrere Vorlagen verfügbar – wähle aus, welche "
+"verschickt werden soll. Vorlagen, die mit einer Check-in-Liste verknüpft "
+"sind, gehen nur an Teilnehmer*innen, die auf dieser Liste eingecheckt sind."
+
+#: views/emails.py:50
+msgid "Send out the attendance certificates to attendees."
+msgstr "Teilnahmebescheinigungen an Teilnehmer*innen verschicken."
+
+#: views/emails.py:101
+#, python-format
+msgid "%(number)s matching ticket"
+msgid_plural "%(number)s matching tickets"
+msgstr[0] "%(number)s passendes Ticket"
+msgstr[1] "%(number)s passende Tickets"
+
+#: views/event_templates.py:105
+#, python-brace-format
+msgid "The template \"{name}\" is now available for this event."
+msgstr "Die Vorlage „{name}“ ist jetzt für diese Veranstaltung verfügbar."
+
+#: views/event_templates.py:112
+#, python-brace-format
+msgid "The template \"{name}\" is no longer available for this event."
+msgstr ""
+"Die Vorlage „{name}“ ist für diese Veranstaltung nicht mehr verfügbar."
+
+#: views/event_templates.py:140 views/event_templates.py:188
+#: views/event_templates.py:227 views/organizer.py:82 views/organizer.py:123
+#: views/signing.py:148
+msgid "Your changes could not be saved."
+msgstr ""
+
+#: views/event_templates.py:148 views/event_templates.py:216
+#: views/organizer.py:112 views/signing.py:98
+msgid "Your changes have been saved."
+msgstr ""
+
+#: views/event_templates.py:178 views/organizer.py:72
+msgid "The template has been created."
+msgstr "Die Vorlage wurde erstellt."
+
+#: views/event_templates.py:260 views/organizer.py:153
+msgid "The template has been deleted."
+msgstr "Die Vorlage wurde gelöscht."
+
+#: views/positions.py:50
+msgid "The requested template is not available for this event."
+msgstr "Die angeforderte Vorlage ist für diese Veranstaltung nicht verfügbar."
+
+#: views/positions.py:53
+#, python-brace-format
+msgid ""
+"This attendee is not eligible for the template \"{name}\" (not checked in on"
+" list \"{checkin_list}\")."
+msgstr ""
+"Diese Teilnehmer*in kommt für die Vorlage „{name}“ nicht in Frage (nicht auf"
+" der Liste „{checkin_list}“ eingecheckt)."
+
+#: views/positions.py:59
+msgid ""
+"No certificate of attendance layout has been configured for this event yet."
+msgstr ""
+"Für diese Veranstaltung wurde noch kein Layout für Teilnahmebescheinigungen "
+"eingerichtet."
+
+#: views/positions.py:65
+msgid ""
+"This attendee is not eligible for any certificate of attendance template."
+msgstr ""
+"Diese Teilnehmer*in kommt für keine Vorlage für Teilnahmebescheinigungen in "
+"Frage."
+
+#: views/positions.py:70
+msgid ""
+"Multiple templates are available for this attendee - please pick one from "
+"the list."
+msgstr ""
+"Für diese Teilnehmer*in sind mehrere Vorlagen verfügbar – bitte wähle eine "
+"aus der Liste aus."
+
+#: views/positions.py:111
+msgid "This attendee has no email address to send the certificate to."
+msgstr ""
+"Diese Teilnehmer*in hat keine E-Mail-Adresse, an die die Bescheinigung "
+"gesendet werden kann."
+
+#: views/positions.py:132
+#, python-brace-format
+msgid "The certificate of attendance is being sent to {recipient}."
+msgstr "Die Teilnahmebescheinigung wird an {recipient} gesendet."
+
+#: views/signing.py:114
+msgid "A new self-signed certificate has been created."
+msgstr "Ein neues selbstsigniertes Zertifikat wurde erstellt."
+
+#: views/signing.py:123
+msgid "The certificate has been imported."
+msgstr "Das Zertifikat wurde importiert."
+
+#: views/signing.py:142
+msgid ""
+"The certificate has been removed. Certificates of attendance are no longer "
+"signed."
+msgstr ""
+"Das Zertifikat wurde entfernt. Teilnahmebescheinigungen werden nicht mehr "
+"signiert."

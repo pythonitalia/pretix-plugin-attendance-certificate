@@ -35,6 +35,7 @@ def send_certificate_of_attendance_mails(
                 position=position,
                 invoice_address=invoice_address,
             )
+            recipient = position.attendee_email or order.email
             rendered_certificate = render_certificate(position=position, event=event)
             cache_file = CachedFile.objects.create(
                 filename="certificate_of_attendance.pdf",
@@ -43,7 +44,7 @@ def send_certificate_of_attendance_mails(
             )
 
             mail(
-                position.attendee_email,
+                recipient,
                 subject,
                 message,
                 email_context,
@@ -65,6 +66,6 @@ def send_certificate_of_attendance_mails(
                     "message": format_map(
                         message.localize(order.locale), email_context
                     ),
-                    "recipient": position.attendee_email,
+                    "recipient": recipient,
                 },
             )

@@ -8,6 +8,7 @@ from django.views import View
 from pretix.base.models import OrderPosition
 from pretix.control.permissions import EventPermissionRequiredMixin
 
+from pretix_attendance_certificate.models import AttendanceCertificateLayout
 from pretix_attendance_certificate.render import render_certificate
 from pretix_attendance_certificate.tasks import send_certificate_of_attendance_mails
 
@@ -27,12 +28,33 @@ def _get_position(request, pk) -> OrderPosition:
     )
 
 
+def _order_url(request, order):
+    return reverse(
+        "control:event.order",
+        kwargs={
+            "event": request.event.slug,
+            "organizer": request.event.organizer.slug,
+            "code": order.code,
+        },
+    )
+
+
 class DownloadCertificateView(EventPermissionRequiredMixin, View):
     permission = "can_view_orders"
 
     def get(self, request, *args, **kwargs):
         position = _get_position(request, kwargs["position"])
-        certificate = render_certificate(position=position, event=request.event)
+        try:
+            certificate = render_certificate(position=position, event=request.event)
+        except AttendanceCertificateLayout.DoesNotExist:
+            messages.error(
+                request,
+                _(
+                    "No certificate of attendance layout has been configured "
+                    "for this event yet."
+                ),
+            )
+            return redirect(_order_url(request, position.order))
         return FileResponse(
             certificate,
             as_attachment=True,
@@ -50,14 +72,15 @@ class SendCertificateView(EventPermissionRequiredMixin, View):
         position = _get_position(request, kwargs["position"])
         order = position.order
 
-        # The task sends to position.attendee_email, so require it here too.
-        recipient = position.attendee_email
+        # Fall back to the order's email if the position itself has none
+        # (e.g. group bookings where only the buyer has an email address).
+        recipient = position.attendee_email or order.email
         if not recipient:
             messages.error(
                 request,
                 _("This attendee has no email address to send the certificate to."),
             )
-            return redirect(self._order_url(order))
+            return redirect(_order_url(request, order))
 
         send_certificate_of_attendance_mails.apply_async(
             kwargs={
@@ -74,14 +97,4 @@ class SendCertificateView(EventPermissionRequiredMixin, View):
                 recipient=recipient
             ),
         )
-        return redirect(self._order_url(order))
-
-    def _order_url(self, order):
-        return reverse(
-            "control:event.order",
-            kwargs={
-                "event": self.request.event.slug,
-                "organizer": self.request.event.organizer.slug,
-                "code": order.code,
-            },
-        )
+        return redirect(_order_url(request, order))

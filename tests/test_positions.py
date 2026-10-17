@@ -43,20 +43,37 @@ def _order_url(event, order):
 def test_position_buttons_rendered(logged_in_client, event, order, pos, layout):
     response = logged_in_client.get(_order_url(event, order))
     assert response.status_code == 200
-    content = response.rendered_content
+    content = response.content.decode()
     assert _download_url(event, pos) in content
     assert "Email certificate" in content
 
 
 @pytest.mark.django_db
-def test_email_button_hidden_without_attendee_email(
+def test_email_button_shown_with_order_email_fallback(
+    logged_in_client, event, order, pos, layout
+):
+    # Group bookings often only have an order-level email, not a per-position
+    # attendee email - the button must still show up in that case.
+    with scopes_disabled():
+        pos.attendee_email = None
+        pos.save()
+    response = logged_in_client.get(_order_url(event, order))
+    content = response.content.decode()
+    assert _download_url(event, pos) in content
+    assert "Email certificate" in content
+
+
+@pytest.mark.django_db
+def test_email_button_hidden_without_any_email(
     logged_in_client, event, order, pos, layout
 ):
     with scopes_disabled():
         pos.attendee_email = None
         pos.save()
+        order.email = None
+        order.save()
     response = logged_in_client.get(_order_url(event, order))
-    content = response.rendered_content
+    content = response.content.decode()
     # Download is always available, the email button is not.
     assert _download_url(event, pos) in content
     assert "Email certificate" not in content
@@ -81,7 +98,8 @@ def test_send_certificate_email(logged_in_client, event, order, pos, layout):
 
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["attendee@dummy.test"]
-    assert djmail.outbox[0].subject == "Your certificate of attendance"
+    # pretix >= 2025 prefixes the subject with the event name ("[Dummy] ...").
+    assert djmail.outbox[0].subject.endswith("Your certificate of attendance")
     assert any("attendee@dummy.test" in m for m in _messages(response))
 
     with scopes_disabled():
@@ -93,10 +111,34 @@ def test_send_certificate_email(logged_in_client, event, order, pos, layout):
 
 
 @pytest.mark.django_db
+def test_send_certificate_falls_back_to_order_email(
+    logged_in_client, event, order, pos, layout
+):
+    with scopes_disabled():
+        pos.attendee_email = None
+        pos.save()
+    djmail.outbox = []
+    response = logged_in_client.post(_send_url(event, pos))
+    assert response.status_code == 302
+
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["dummy@dummy.test"]
+    assert any("dummy@dummy.test" in m for m in _messages(response))
+
+    with scopes_disabled():
+        logentry = order.all_logentries().get(
+            action_type="pretix_attendance_certificate.sent.attendee"
+        )
+        assert logentry.parsed_data["recipient"] == "dummy@dummy.test"
+
+
+@pytest.mark.django_db
 def test_send_certificate_without_email(logged_in_client, event, order, pos, layout):
     with scopes_disabled():
         pos.attendee_email = None
         pos.save()
+        order.email = None
+        order.save()
     djmail.outbox = []
     response = logged_in_client.post(_send_url(event, pos))
     assert response.status_code == 302

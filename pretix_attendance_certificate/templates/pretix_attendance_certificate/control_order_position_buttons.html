@@ -4,7 +4,7 @@
     <span class="fa fa-id-card"></span>
     {% trans "Certificate of attendance" %}
 </a>
-{% if position.attendee_email %}
+{% if position.attendee_email or order.email %}
     <form action="{% url "plugins:pretix_attendance_certificate:position.send" event=event.slug organizer=event.organizer.slug position=position.pk %}"
             method="post" class="form-inline helper-display-inline">
         {% csrf_token %}

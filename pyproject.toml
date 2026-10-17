@@ -1,10 +1,9 @@
 [tool.pdm]
 [tool.pdm.dev-dependencies]
 dev = [
-    "pretix==4.18.0",
-    "pytest<8.0.0,>=7.3.0",
-    "pytest-django<5.0.0,>=4.5.2",
-    "pycryptodome>=3.17",
+    "pretix>=2026.7.0",
+    "pytest>=8.0",
+    "pytest-django>=4.8,<5.0",
 ]
 
 [tool.pdm.build]
@@ -22,7 +21,7 @@ authors = [
     {name = "Python Italia"},
 ]
 dependencies = []
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.11,<4.0"
 readme = "README.md"
 license = {text = "MIT"}
 

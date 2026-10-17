@@ -1,0 +1,21 @@
+{% load i18n %}
+<div class="panel panel-primary">
+    <div class="panel-heading">
+        <h3 class="panel-title">{% trans "Certificate of attendance" %}</h3>
+    </div>
+    <div class="panel-body">
+        {% for row in rows %}
+            {% if rows|length > 1 %}
+                <p><strong>{{ row.position.attendee_name|default:row.position.item }}</strong></p>
+            {% endif %}
+            <p>
+                {% for link in row.links %}
+                    <a href="{{ link.url }}" class="btn btn-default">
+                        <span class="fa fa-download"></span>
+                        {% if row.links|length > 1 %}{{ link.name }}{% else %}{% trans "Download certificate of attendance" %}{% endif %}
+                    </a>
+                {% endfor %}
+            </p>
+        {% endfor %}
+    </div>
+</div>

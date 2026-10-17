@@ -1,5 +1,5 @@
 all: localecompile
-LNGS:=`find pretix_extended_api/locale/ -mindepth 1 -maxdepth 1 -type d -printf "-l %f "`
+LNGS:=`find pretix_attendance_certificate/locale/ -mindepth 1 -maxdepth 1 -type d -printf "-l %f "`
 
 localecompile:
 	django-admin compilemessages

@@ -1,5 +1,7 @@
+from django.core.exceptions import PermissionDenied
 from django.core.files import File
 from django.contrib.staticfiles import finders
+from django.shortcuts import get_object_or_404
 from reportlab.pdfgen import canvas
 from django.core.files.storage import default_storage
 from reportlab.lib import pagesizes
@@ -9,15 +11,47 @@ from pretix.base.models import CachedFile, OrderPosition
 import json
 from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
-from django.http import Http404
 from pretix_attendance_certificate.models import AttendanceCertificateLayout
+from pretix.control.permissions import EventPermissionRequiredMixin
 from pretix.control.views.pdf import BaseEditorView
 from django.templatetags.static import static
 
 
 class EditorView(BaseEditorView):
+    @classmethod
+    def as_view(cls, **initkwargs):
+        # Skip BaseEditorView's (= EventPermissionRequiredMixin's) hard-coded
+        # event-only permission wrapping: whether an event- or organizer-level
+        # permission is required depends on which layout is being targeted,
+        # and that is only known once the `layout` kwarg (if any) is resolved
+        # in dispatch() below.
+        return super(EventPermissionRequiredMixin, cls).as_view(**initkwargs)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            raise PermissionDenied()
+        if self.layout.organizer_id:
+            allowed = request.user.has_organizer_permission(
+                request.organizer, "can_change_organizer_settings", request=request
+            )
+        else:
+            allowed = request.user.has_event_permission(
+                request.organizer,
+                request.event,
+                "can_change_event_settings",
+                request=request,
+            )
+        if not allowed:
+            raise PermissionDenied(_("You do not have permission to view this content."))
+        return super().dispatch(request, *args, **kwargs)
+
     @cached_property
     def layout(self):
+        layout_pk = self.kwargs.get("layout")
+        if layout_pk:
+            return get_object_or_404(
+                AttendanceCertificateLayout.visible_to(self.request.event), pk=layout_pk
+            )
         layout = self.request.event.attendance_certificate_layouts.first()
         if layout is None:
             layout = self.request.event.attendance_certificate_layouts.create(

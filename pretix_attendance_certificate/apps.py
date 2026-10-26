@@ -23,6 +23,7 @@ class PluginApp(PluginConfig):
 
     def ready(self):
         from . import signals  # NOQA
+        from . import checkin_handlers  # NOQA
 
     def installed(self, event):
         if not event.attendance_certificate_layouts.exists():

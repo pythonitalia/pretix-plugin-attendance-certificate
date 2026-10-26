@@ -8,16 +8,9 @@ from django.views import View
 from pretix.base.models import OrderPosition
 from pretix.control.permissions import EventPermissionRequiredMixin
 
+from pretix_attendance_certificate.email_defaults import mail_texts
 from pretix_attendance_certificate.render import render_certificate
 from pretix_attendance_certificate.tasks import send_certificate_of_attendance_mails
-
-DEFAULT_SUBJECT = _("[{event}] Your certificate of attendance")
-DEFAULT_MESSAGE = _(
-    "Hello,\n\n"
-    "please find your certificate of attendance for {event} attached to this "
-    "email.\n\n"
-    "Best regards"
-)
 
 
 def _get_position(request, pk) -> OrderPosition:
@@ -63,8 +56,7 @@ class SendCertificateView(EventPermissionRequiredMixin, View):
             kwargs={
                 "event": request.event.pk,
                 "user": request.user.pk,
-                "subject": DEFAULT_SUBJECT,
-                "message": DEFAULT_MESSAGE,
+                **mail_texts(request.event),
                 "objects": [position.pk],
             }
         )

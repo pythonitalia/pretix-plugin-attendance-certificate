@@ -7,6 +7,7 @@ from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
 from pretix.base.models import (
+    Checkin,
     Event,
     Item,
     Order,
@@ -72,6 +73,7 @@ def order(event):
         expires=now() + datetime.timedelta(hours=1),
         total=13,
         code="DUMMY",
+        sales_channel=event.organizer.sales_channels.get(identifier="web"),
         email="dummy@dummy.test",
         datetime=now(),
         locale="en",
@@ -84,9 +86,16 @@ def pos(order, item):
         order=order,
         item=item,
         price=13,
-        admission=True,
         attendee_name_parts={"_legacy": "Marco Acierno"},
         attendee_email="attendee@dummy.test",
+    )
+
+
+@pytest.fixture
+def checkin(event, pos):
+    checkin_list = event.checkin_lists.create(name="Default")
+    return Checkin.objects.create(
+        position=pos, list=checkin_list, type=Checkin.TYPE_ENTRY
     )
 
 
@@ -95,8 +104,23 @@ def logged_in_client(client, event):
     user = User.objects.create_user("dummy@dummy.dummy", "dummy")
     team = Team.objects.create(
         organizer=event.organizer,
-        can_view_orders=True,
-        can_change_orders=True,
+        limit_event_permissions={
+            "event.orders:read": True,
+            "event.orders:write": True,
+        },
+    )
+    team.members.add(user)
+    team.limit_events.add(event)
+    client.force_login(user)
+    return client
+
+
+@pytest.fixture
+def settings_client(client, event):
+    user = User.objects.create_user("admin@dummy.dummy", "dummy")
+    team = Team.objects.create(
+        organizer=event.organizer,
+        limit_event_permissions={"event.settings.general:write": True},
     )
     team.members.add(user)
     team.limit_events.add(event)

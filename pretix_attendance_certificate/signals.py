@@ -6,6 +6,7 @@ from django.utils.safestring import mark_safe
 from pretix_attendance_certificate.views.emails import SendCertificateEmailView
 from pretix.control.signals import (
     nav_event,
+    nav_event_settings,
     order_position_buttons,
 )
 from pretix.plugins.sendmail.signals import sendmail_view_classes
@@ -23,7 +24,7 @@ def control_nav_import(sender, request=None, **kwargs):
     )
     if not p:
         return []
-    return [
+    nav = [
         {
             "label": _("Certificate of Attendance"),
             "url": reverse(
@@ -60,7 +61,60 @@ def control_nav_import(sender, request=None, **kwargs):
                     "active": url.namespace == "plugins:pretix_attendance_certificate"
                     and url.url_name == "send",
                 },
+                {
+                    "label": _("Delivery history"),
+                    "url": reverse(
+                        "plugins:pretix_attendance_certificate:deliveries",
+                        kwargs={
+                            "event": request.event.slug,
+                            "organizer": request.event.organizer.slug,
+                        },
+                    ),
+                    "active": url.namespace == "plugins:pretix_attendance_certificate"
+                    and url.url_name == "deliveries",
+                },
             ],
+        }
+    ]
+    if request.user.has_event_permission(
+        request.organizer, request.event, "can_change_event_settings", request
+    ):
+        nav[0]["children"].append(
+            {
+                "label": _("Settings"),
+                "url": reverse(
+                    "plugins:pretix_attendance_certificate:settings",
+                    kwargs={
+                        "event": request.event.slug,
+                        "organizer": request.event.organizer.slug,
+                    },
+                ),
+                "active": url.namespace == "plugins:pretix_attendance_certificate"
+                and url.url_name == "settings",
+            }
+        )
+    return nav
+
+
+@receiver(nav_event_settings, dispatch_uid="certificate_of_attendance_nav_settings")
+def control_nav_settings(sender, request=None, **kwargs):
+    if not request.user.has_event_permission(
+        request.organizer, request.event, "can_change_event_settings", request
+    ):
+        return []
+    url = resolve(request.path_info)
+    return [
+        {
+            "label": _("Certificate of Attendance"),
+            "url": reverse(
+                "plugins:pretix_attendance_certificate:settings",
+                kwargs={
+                    "event": request.event.slug,
+                    "organizer": request.event.organizer.slug,
+                },
+            ),
+            "active": url.namespace == "plugins:pretix_attendance_certificate"
+            and url.url_name == "settings",
         }
     ]
 
@@ -105,6 +159,20 @@ def pretix_logentry_display(sender, logentry, **kwargs):
             "An email has been sent with the certificate of attendance "
             'to attendee "{attendee_name}"'
         ).format(attendee_name=order_position.attendee_name)
+
+    if logentry.action_type == "pretix_attendance_certificate.failed.attendee":
+        return _(
+            "The certificate of attendance could not be sent to {recipient}: {error}"
+        ).format(
+            recipient=logentry.parsed_data.get("recipient"),
+            error=logentry.parsed_data.get("error"),
+        )
+
+    if logentry.action_type == "pretix_attendance_certificate.skipped.duplicate":
+        return _(
+            "The certificate of attendance was not sent automatically because it "
+            "has already been sent."
+        )
 
     if (
         logentry.action_type

@@ -18,6 +18,37 @@ def bg_name(instance, filename: str) -> str:
     )
 
 
+class CertificateDelivery(models.Model):
+    STATUS_SENDING = "sending"
+    STATUS_SENT = "sent"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = (
+        (STATUS_SENDING, _("Sending")),
+        (STATUS_SENT, _("Sent")),
+        (STATUS_FAILED, _("Failed")),
+    )
+
+    position = models.OneToOneField(
+        "pretixbase.OrderPosition",
+        on_delete=models.CASCADE,
+        related_name="attendance_certificate_delivery",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_SENDING,
+    )
+    recipient = models.EmailField(blank=True)
+    automatic = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    error = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ("-updated",)
+
+
 class AttendanceCertificateLayout(LoggedModel):
     event = models.ForeignKey(
         "pretixbase.Event",

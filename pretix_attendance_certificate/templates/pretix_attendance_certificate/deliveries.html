@@ -1,0 +1,83 @@
+{% extends "pretixcontrol/event/base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Certificate deliveries" %}{% endblock %}
+{% block content %}
+    <h1>{% trans "Certificate deliveries" %}</h1>
+    <ul class="nav nav-pills">
+        <li {% if not current_status %}class="active"{% endif %}>
+            <a href="?">{% trans "All" %}</a>
+        </li>
+        {% for value, label in status_choices %}
+            <li {% if current_status == value %}class="active"{% endif %}>
+                <a href="?status={{ value }}">{{ label }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+    {% if deliveries|length == 0 %}
+        <div class="empty-collection">
+            <p>{% trans "No certificates have been sent yet." %}</p>
+        </div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>{% trans "Order" %}</th>
+                    <th>{% trans "Attendee" %}</th>
+                    <th>{% trans "Recipient" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Trigger" %}</th>
+                    <th>{% trans "Last attempt" %}</th>
+                    <th>{% trans "Sent at" %}</th>
+                    {% if can_resend %}<th></th>{% endif %}
+                </tr>
+                </thead>
+                <tbody>
+                {% for d in deliveries %}
+                    <tr>
+                        <td>
+                            <a href="{% url "control:event.order" organizer=request.event.organizer.slug event=request.event.slug code=d.position.order.code %}">
+                                <strong>{{ d.position.order.code }}</strong>-{{ d.position.positionid }}
+                            </a>
+                        </td>
+                        <td>{{ d.position.attendee_name|default:"" }}</td>
+                        <td>{{ d.recipient }}</td>
+                        <td>
+                            {% if d.status == "sent" %}
+                                <span class="label label-success">{{ d.get_status_display }}</span>
+                            {% elif d.status == "failed" %}
+                                <span class="label label-danger" title="{{ d.error }}">{{ d.get_status_display }}</span>
+                            {% else %}
+                                <span class="label label-warning">{{ d.get_status_display }}</span>
+                            {% endif %}
+                            {% if d.status == "failed" and d.error %}
+                                <br><small class="text-muted">{{ d.error|truncatechars:120 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if d.automatic %}{% trans "Check-in" %}{% else %}{% trans "Manual" %}{% endif %}
+                        </td>
+                        <td>{{ d.updated|date:"SHORT_DATETIME_FORMAT" }}</td>
+                        <td>{% if d.sent_at %}{{ d.sent_at|date:"SHORT_DATETIME_FORMAT" }}{% endif %}</td>
+                        {% if can_resend %}
+                            <td class="text-right flip">
+                                {% if d.position.attendee_email %}
+                                    <form action="{% url "plugins:pretix_attendance_certificate:position.send" event=request.event.slug organizer=request.event.organizer.slug position=d.position.pk %}"
+                                            method="post" class="form-inline helper-display-inline">
+                                        {% csrf_token %}
+                                        <button class="btn btn-default btn-sm" type="submit"
+                                                title="{% trans "Send again" %}">
+                                            <span class="fa fa-envelope"></span>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "pretixcontrol/pagination.html" %}
+    {% endif %}
+{% endblock %}
